@@ -1,0 +1,15 @@
+{
+    "name": "luisgeymonat/tienda-api2",
+    "autoload": {
+        "psr-4": {
+            "Luisgeymonat\\TiendaApi2\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Luis Geymonat",
+            "email": "luisgeymonatbidart@gmail.com"
+        }
+    ],
+    "require": {}
+}

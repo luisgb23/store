@@ -1,0 +1,48 @@
+# MySQL para la API de la tienda.
+#
+# Poné este archivo en la carpeta de la API (junto a schema.sql y .env).
+# Docker Compose lee las variables del mismo .env que usa la API, así la clave
+# y el puerto se definen en un solo lugar:
+#
+#   DB_HOST=127.0.0.1
+#   DB_PORT=3308          <- puerto de TU PC (el de adentro del contenedor es siempre 3306)
+#   DB_NAME=tienda_db     <- el esquema (schema.sql) crea esta base
+#   DB_USER=root
+#   DB_PASS=una-clave
+#
+# Uso:
+#   docker compose up -d        # crea el contenedor; la primera vez importa schema.sql
+#   docker compose ps           # cuando STATUS diga "healthy", MySQL ya acepta conexiones
+#   docker compose logs db      # si algo falla
+#   docker compose stop         # detiene (los datos se conservan)
+#   docker compose down -v      # BORRA el contenedor y TODOS los datos (se reimporta schema.sql)
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: tienda_db
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    environment:
+      # Es la clave del usuario root: tiene que ser la misma que DB_PASS en el .env de la API.
+      MYSQL_ROOT_PASSWORD: ${DB_PASS:?Definí DB_PASS en el archivo .env (la clave de root de MySQL)}
+    ports:
+      # puerto de tu PC : puerto interno de MySQL (no cambies el 3306 de la derecha)
+      - "${DB_PORT:-3308}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # Se ejecuta solo la primera vez, cuando el volumen está vacío.
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      # Usa TCP (127.0.0.1): durante el arranque inicial MySQL no escucha por TCP,
+      # así que "healthy" significa que ya está listo para la API.
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+volumes:
+  mysql_data:
